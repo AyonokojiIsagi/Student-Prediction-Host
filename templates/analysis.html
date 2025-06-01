@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            box-shadow: 5px 0 15px 0 rgba(59, 130, 246, 0.3);
+            width: 16rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+        .card {
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+        .navbar {
+            box-shadow: 0 2px 10px 0 rgba(59, 130, 246, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .profile-dropdown {
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.5);
+        }
+        .notification-badge {
+            box-shadow: 0 0 5px 1px rgba(220, 38, 38, 0.5);
+        }
+        .flash-message {
+            box-shadow: 0 0 10px 3px rgba(220, 38, 38, 0.5);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        #dropdownMenu {
+            display: none;
+        }
+        #dropdownMenu.show {
+            display: block;
+        }
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+        #sidebar.collapsed .nav-text {
+            display: none;
+        }
+        #sidebar.collapsed .dashboard-title {
+            display: none;
+        }
+        #mainContent {
+            transition: margin-left 0.3s ease;
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+        }
+        #sidebar.collapsed ~ #mainContent {
+            margin-left: 5rem;
+            width: calc(100% - 5rem);
+        }
+        @media (max-width: 992px) {
+            #sidebar {
+                width: 5rem;
+            }
+            #sidebar .nav-text, #sidebar .dashboard-title {
+                display: none;
+            }
+            #mainContent {
+                margin-left: 5rem;
+                width: calc(100% - 5rem);
+            }
+            #sidebar.collapsed {
+                width: 0;
+            }
+            #sidebar.collapsed ~ #mainContent {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+        .file-count {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+        }
+        .performance-A { background-color: #10B981; }
+        .performance-B { background-color: #3B82F6; }
+        .performance-C { background-color: #F59E0B; }
+        .performance-D { background-color: #EF4444; }
+        .performance-F { background-color: #7C3AED; }
+        .exam-selector {
+            background-color: #1E293B;
+            border: 1px solid #3B82F6;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3B82F6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        .pagination a {
+            color: white;
+            padding: 0.5rem 1rem;
+            margin: 0 0.25rem;
+            background-color: #1E293B;
+            border: 1px solid #3B82F6;
+            border-radius: 0.25rem;
+        }
+        .pagination a.active {
+            background-color: #3B82F6;
+            font-weight: bold;
+        }
+        .pagination a:hover:not(.active) {
+            background-color: #334155;
+        }
+        .file-upload-btn {
+            transition: all 0.2s ease;
+        }
+        .file-upload-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.5);
+        }
+        .validation-error {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-black via-blue-900 to-gray-900 min-h-screen text-white font-mono">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p class="mt-4 text-blue-300">Processing analysis... Please wait</p>
+    </div>
+
+    <!-- Flash Message -->
+    <div id="flash-message" class="flash-message fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 border-2 border-red-500 rounded-none p-3 max-w-md w-full z-50" style="display: {% if get_flashed_messages() %}block{% else %}none{% endif %};">
+        <button class="absolute top-1 right-2 text-red-400 hover:text-red-300" onclick="document.getElementById('flash-message').style.display='none'">&times;</button>
+        <div class="text-center">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="text-red-400 font-mono text-sm">[SYSTEM ALERT] {{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-900 border-r-2 border-blue-500 p-4 sidebar">
+            <div class="flex items-center justify-between mb-8">
+                <button class="text-blue-400 hover:text-blue-300 text-xl dash-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-blue-400 text-xl font-bold dashboard-title">[SYSTEM]</h2>
+            </div>
+            <nav class="space-y-2">
+                <a href="/user_dashboard" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-home w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[DASHBOARD]</span>
+                </a>
+                <a href="/analysis" class="flex items-center p-3 text-blue-400 nav-link active">
+                    <i class="fas fa-chart-line w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[ANALYSIS]</span>
+                </a>
+                <a href="/profile" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-user w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[PROFILE]</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[LOGOUT]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="mainContent" class="flex-1">
+            <!-- Navbar -->
+            <header class="flex items-center justify-between p-4 bg-black border-b-2 border-blue-500 navbar">
+                <h1 class="text-xl font-bold text-blue-300">[STUDENT PERFORMANCE ANALYSIS]</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="relative" id="notification-btn">
+                        <button class="text-blue-400 hover:text-blue-300 text-xl">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="p-6">
+                {% if not analyzed %}
+                <!-- Analysis Form -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- File Upload Card -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-6 rounded-none card col-span-2">
+                        <h3 class="text-blue-400 font-bold mb-4 text-xl">[BATCH ANALYSIS]</h3>
+                        <form id="batchForm" method="POST" enctype="multipart/form-data" class="space-y-4">
+                            <div>
+                                <label class="block text-blue-300 mb-2">Upload Student Data</label>
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <label for="analysisFile" class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 border-2 border-blue-400 file-upload-btn">
+                                        <i class="fas fa-file-upload mr-2"></i> Choose File
+                                    </label>
+                                    <span id="fileName" class="text-blue-300 truncate max-w-xs">No file selected</span>
+                                    <input type="file" name="analysis_file" id="analysisFile"
+                                           accept=".csv,.xlsx,.xls"
+                                           class="hidden"
+                                           required>
+                                </div>
+                                <p class="text-blue-400 text-xs mb-1">
+                                    Supported formats: CSV, Excel (max 16MB)
+                                </p>
+                                <div id="fileSizeWarning" class="text-red-400 text-xs hidden validation-error">
+                                    <i class="fas fa-exclamation-circle mr-1"></i> File exceeds maximum size of 16MB
+                                </div>
+                                <div id="fileTypeWarning" class="text-red-400 text-xs hidden validation-error">
+                                    <i class="fas fa-exclamation-circle mr-1"></i> Only CSV/Excel files allowed
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-blue-300 mb-2">Exam Type</label>
+                                <select name="exam_type" class="exam-selector w-full" required>
+                                    <option value="Term 1 Opener">Term 1 Opener</option>
+                                    <option value="Term 1 Mid-Term">Term 1 Mid-Term</option>
+                                    <option value="Term 1 End Term">Term 1 End Term</option>
+                                    <option value="Term 2 Opener">Term 2 Opener</option>
+                                    <option value="Term 2 Mid-Term">Term 2 Mid-Term</option>
+                                    <option value="Term 2 End Term">Term 2 End Term</option>
+                                    <option value="Term 3 Opener">Term 3 Opener</option>
+                                    <option value="Term 3 Mid-Term">Term 3 End-Term</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 border-2 border-blue-400 w-full transition-all duration-200 hover:scale-[1.02]">
+                                <i class="fas fa-chart-bar mr-2"></i> Analyze Data
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Manual Analysis Card -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-6 rounded-none card">
+                        <h3 class="text-blue-400 font-bold mb-4 text-xl">[SINGLE STUDENT]</h3>
+                        <form id="manualForm" method="POST" class="space-y-3">
+                            <input type="hidden" name="manual_analysis" value="true">
+
+                            <div>
+                                <label class="block text-blue-300 mb-1">Admission Number</label>
+                                <input type="text" name="Adm_No" class="w-full bg-gray-800 border-2 border-blue-500 p-2 text-white" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-blue-300 mb-1">Student Name</label>
+                                <input type="text" name="Name" class="w-full bg-gray-800 border-2 border-blue-500 p-2 text-white" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-blue-300 mb-1">Exam Type</label>
+                                <select name="exam_type" class="exam-selector w-full" required>
+                                    <option value="Term 1 Opener">Term 1 Opener</option>
+                                    <option value="Term 1 Mid-Term">Term 1 Mid-Term</option>
+                                    <option value="Term 1 End Term">Term 1 End Term</option>
+                                    <option value="Term 2 Opener">Term 2 Opener</option>
+                                    <option value="Term 2 Mid-Term">Term 2 Mid-Term</option>
+                                    <option value="Term 2 End Term">Term 2 End Term</option>
+                                    <option value="Term 3 Opener">Term 3 Opener</option>
+                                    <option value="Term 3 Mid-Term">Term 3 End-Term</option>
+
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-blue-300 mb-1">Behavior (1-5)</label>
+                                <input type="number" name="Behavior" min="1" max="5" value="3" class="w-full bg-gray-800 border-2 border-blue-500 p-2 text-white" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-blue-300 mb-1">Attendance (%)</label>
+                                <input type="number" name="Attendance" min="0" max="100" value="80" class="w-full bg-gray-800 border-2 border-blue-500 p-2 text-white" required>
+                            </div>
+
+                            {% for subject in compulsory_subjects %}
+                            <div>
+                                <label class="block text-blue-300 mb-1">{{ subject }} *</label>
+                                <input type="number" name="{{ subject }}" min="0" max="100" value="50" class="w-full bg-gray-800 border-2 border-blue-500 p-2 text-white" required>
+                            </div>
+                            {% endfor %}
+
+                            {% for subject in subjects if subject not in compulsory_subjects %}
+                            <div>
+                                <label class="block text-blue-300 mb-1">{{ subject }}</label>
+                                <input type="number" name="{{ subject }}" min="0" max="100" value="50" class="w-full bg-gray-800 border-2 border-blue-500 p-2 text-white">
+                            </div>
+                            {% endfor %}
+
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 border-2 border-blue-400 w-full transition-all duration-200 hover:scale-[1.02]">
+                                <i class="fas fa-user-graduate mr-2"></i> Analyze Student
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Results Display -->
+                <div class="space-y-6">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                            <h4 class="text-blue-400 font-bold mb-2">[STUDENTS ANALYZED]</h4>
+                            <p class="file-count">{{ results|length }}</p>
+                        </div>
+                        <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                            <h4 class="text-blue-400 font-bold mb-2">[AVG PREDICTED SCORE]</h4>
+                            <p class="file-count">{{ avg_predicted }}</p>
+                        </div>
+                        <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                            <h4 class="text-blue-400 font-bold mb-2">[AT RISK STUDENTS]</h4>
+                            <p class="file-count">{{ at_risk_count }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Visualizations -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                            <h4 class="text-blue-400 font-bold mb-4">[PERFORMANCE DISTRIBUTION]</h4>
+                            {% if plot_urls.performance_dist %}
+                            <img src="{{ url_for('static', filename='temp_plots/performance_dist.png') }}" alt="Performance Distribution" class="w-full">
+                            {% else %}
+                            <p class="text-blue-300">No performance data available</p>
+                            {% endif %}
+                        </div>
+                        <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                            <h4 class="text-blue-400 font-bold mb-4">[WEAK SUBJECTS ANALYSIS]</h4>
+                            {% if plot_urls.weak_subjects %}
+                            <img src="{{ url_for('static', filename='temp_plots/weak_subjects.png') }}" alt="Weak Subjects Analysis" class="w-full">
+                            {% else %}
+                            <p class="text-blue-300">No weak subjects data available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Detailed Results -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-blue-400 font-bold">[DETAILED ANALYSIS]</h4>
+                            <div class="flex space-x-2">
+                                <button onclick="downloadReport('excel')" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 border-2 border-blue-400 text-sm transition-all duration-200 hover:scale-[1.05]">
+                                    <i class="fas fa-file-excel mr-1"></i> Excel
+                                </button>
+                                <button onclick="downloadReport('csv')" class="bg-green-600 hover:bg-green-700 text-white py-1 px-3 border-2 border-green-400 text-sm transition-all duration-200 hover:scale-[1.05]">
+                                    <i class="fas fa-file-csv mr-1"></i> CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border-2 border-blue-500">
+                                <thead>
+                                    <tr class="bg-blue-900 text-blue-300">
+                                        <th class="p-2 text-left">Adm No</th>
+                                        <th class="p-2 text-left">Name</th>
+                                        <th class="p-2 text-left">Exam Type</th>
+                                        <th class="p-2 text-left">Current</th>
+                                        <th class="p-2 text-left">Predicted</th>
+                                        <th class="p-2 text-left">At Risk</th>
+                                        <th class="p-2 text-left">Weak Subjects</th>
+                                        <th class="p-2 text-left">Priority Subjects</th>
+                                        <th class="p-2 text-left">Behavior</th>
+                                        <th class="p-2 text-left">Attendance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in results %}
+                                    <tr class="border-t-2 border-blue-500 hover:bg-gray-800 transition-colors duration-150">
+                                        <td class="p-2">{{ student.Adm_No }}</td>
+                                        <td class="p-2">{{ student.Name }}</td>
+                                        <td class="p-2">{{ student.Exam_Type }}</td>
+                                        <td class="p-2">{{ "%.1f"|format(student.Current_Mean) }}</td>
+                                        <td class="p-2">{{ "%.1f"|format(student.Predicted_Mean) }}</td>
+                                        <td class="p-2">
+                                            <span class="px-2 py-1 rounded-none text-white {% if student.At_Risk == 'YES' %}bg-red-600{% else %}bg-green-600{% endif %}">
+                                                {{ student.At_Risk }}
+                                            </span>
+                                        </td>
+                                        <td class="p-2">
+                                            {% if student.Weak_Subjects %}
+                                                {{ student.Weak_Subjects|join(', ') }}
+                                            {% else %}
+                                                None
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-2">
+                                            {% if student.Priority_Subjects %}
+                                                {{ student.Priority_Subjects|join(', ') }}
+                                            {% else %}
+                                                None
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-2">{{ student.Behavior_Display }}</td>
+                                        <td class="p-2">{{ student.Attendance_Display }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if total_pages > 1 %}
+                        <div class="pagination mt-4">
+                            {% if current_page > 1 %}
+                            <a href="{{ url_for('analysis', page=current_page-1) }}" class="hover:bg-blue-800 transition-colors">&laquo;</a>
+                            {% endif %}
+
+                            {% for page_num in range(1, total_pages + 1) %}
+                            <a href="{{ url_for('analysis', page=page_num) }}"
+                               class="{% if page_num == current_page %}active{% else %}hover:bg-blue-800{% endif %} transition-colors">
+                                {{ page_num }}
+                            </a>
+                            {% endfor %}
+
+                            {% if current_page < total_pages %}
+                            <a href="{{ url_for('analysis', page=current_page + 1) }}" class="hover:bg-blue-800 transition-colors">&raquo;</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleBtn = document.querySelector('.dash-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // File upload handling
+        const fileInput = document.getElementById('analysisFile');
+        const fileNameDisplay = document.getElementById('fileName');
+        const fileSizeWarning = document.getElementById('fileSizeWarning');
+        const fileTypeWarning = document.getElementById('fileTypeWarning');
+        const maxSize = 16 * 1024 * 1024; // 16MB in bytes
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                fileNameDisplay.textContent = file.name;
+
+                // Reset warnings
+                fileSizeWarning.classList.add('hidden');
+                fileTypeWarning.classList.add('hidden');
+
+                // Validate file type
+                const validTypes = ['csv', 'xlsx', 'xls'];
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                if (!validTypes.includes(fileExt)) {
+                    fileTypeWarning.classList.remove('hidden');
+                    fileTypeWarning.classList.add('validation-error');
+                    setTimeout(() => fileTypeWarning.classList.remove('validation-error'), 500);
+                    return;
+                }
+
+                // Validate file size
+                if (file.size > maxSize) {
+                    fileSizeWarning.classList.remove('hidden');
+                    fileSizeWarning.classList.add('validation-error');
+                    setTimeout(() => fileSizeWarning.classList.remove('validation-error'), 500);
+                }
+            } else {
+                fileNameDisplay.textContent = 'No file selected';
+            }
+        });
+
+        // Form validation
+        document.getElementById('batchForm')?.addEventListener('submit', function(e) {
+            if (fileInput.files.length === 0) {
+                alert('Please select a file to upload');
+                e.preventDefault();
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // Final validation checks
+            if (file.size > maxSize) {
+                fileSizeWarning.classList.remove('hidden');
+                alert('File too large. Maximum size is 16MB.');
+                e.preventDefault();
+                return;
+            }
+
+            const validTypes = ['csv', 'xlsx', 'xls'];
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            if (!validTypes.includes(fileExt)) {
+                fileTypeWarning.classList.remove('hidden');
+                alert('Only CSV or Excel files are allowed');
+                e.preventDefault();
+                return;
+            }
+
+            showLoading();
+        });
+
+        document.getElementById('manualForm')?.addEventListener('submit', function(e) {
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                    field.classList.remove('border-blue-500');
+                } else {
+                    field.classList.remove('border-red-500');
+                    field.classList.add('border-blue-500');
+                }
+            });
+
+            if (!isValid) {
+                alert('Please fill in all required fields');
+                e.preventDefault();
+            } else {
+                showLoading();
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            // Timeout fallback in case something goes wrong
+            setTimeout(hideLoading, 30000);
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Download report
+        function downloadReport(format) {
+            const results = {% if results and analyzed %}{{ results|tojson|safe }}{% else %}null{% endif %};
+
+            if (!results || results.length === 0) {
+                alert('No analysis results available to download. Please analyze data first.');
+                return;
+            }
+
+            showLoading();
+
+            fetch('/download_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    results: results,
+                    format: format
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = format === 'csv' ? 'student_performance_report.csv' : 'student_performance_report.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('Download error:', error);
+                alert('Error downloading report: ' + error.message);
+                hideLoading();
+            });
+        }
+
+        // Flash message timeout
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessage = document.getElementById('flash-message');
+            if (flashMessage && flashMessage.style.display === 'block') {
+                setTimeout(() => {
+                    flashMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            // Responsive handling
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            }
+        });
+
+        // Responsive sidebar handling
+        window.addEventListener('resize', function() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        });
+    </script>
+</body>
+</html>

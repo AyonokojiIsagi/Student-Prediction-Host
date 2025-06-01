@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanwKj8ycQJpHbYvgvs77N1Pp6Gp0zp6Snq7V0LuevBQh4l9xNQ1RZg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .login-card {
+            box-shadow: 0 0 20px 8px rgba(59, 130, 246, 0.4);
+        }
+        .login-btn {
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.5);
+        }
+        .login-btn:hover {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.7);
+        }
+        .social-icon {
+            box-shadow: 0 0 8px 1px rgba(59, 130, 246, 0.3);
+        }
+        .social-icon:hover {
+            box-shadow: 0 0 12px 3px rgba(59, 130, 246, 0.5);
+        }
+        .flash-message {
+            box-shadow: 0 0 10px 3px rgba(220, 38, 38, 0.5);
+        }
+        #loader {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: rgb(59, 130, 246);
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loader-text {
+            color: rgb(59, 130, 246);
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-black via-blue-900 to-gray-900 min-h-screen flex items-center justify-center font-mono p-4">
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">[INITIALIZING SYSTEM...]</div>
+    </div>
+
+    <!-- Flash Message -->
+    <div id="flash-message" class="flash-message fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 border-2 border-red-500 rounded-none p-3 max-w-md w-full z-50" style="display: {% if get_flashed_messages() %}block{% else %}none{% endif %};">
+        <button class="absolute top-1 right-2 text-red-400 hover:text-red-300" onclick="document.getElementById('flash-message').style.display='none'">&times;</button>
+        <div class="text-center">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="text-red-400 font-mono text-sm">[SYSTEM ALERT] {{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="bg-gray-900 border-2 border-blue-500 rounded-none login-card w-full max-w-md p-8 relative overflow-hidden">
+        <!-- Decorative elements -->
+        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+        <div class="absolute top-2 right-2 text-blue-400 text-xs">v2.4.1</div>
+
+        <h1 class="text-2xl font-bold text-blue-400 mb-6 text-center">[SYSTEM LOGIN]</h1>
+
+        <form id="loginForm" class="space-y-5" action="{{ url_for('login') }}" method="POST">
+            <div class="relative">
+                <i class="fa fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400"></i>
+                <input type="email" name="email" placeholder="USER IDENTIFICATION"
+                       class="w-full pl-10 pr-4 py-3 bg-black text-blue-200 border-2 border-blue-500 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                       required aria-label="Email">
+            </div>
+
+            <div class="relative">
+                <i class="fa fa-unlock-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400"></i>
+                <input type="password" name="password" placeholder="ACCESS CODE"
+                       class="w-full pl-10 pr-4 py-3 bg-black text-blue-200 border-2 border-blue-500 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                       required aria-label="Password">
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-blue-600 text-white font-bold rounded-none login-btn hover:bg-blue-700 transition-all duration-200 border-2 border-blue-500">
+                <span class="mr-2">AUTHENTICATE</span>
+                <i class="fa-solid fa-right-to-bracket"></i>
+            </button>
+        </form>
+
+        <div class="mt-6 pt-4 border-t-2 border-blue-500">
+            <div class="flex justify-between text-blue-400 text-sm mb-4">
+                <a href="{{ url_for('reset_password_request') }}" class="hover:text-blue-300 underline">[FORGOT CREDENTIALS?]</a>
+                <a href="{{ url_for('register') }}" class="hover:text-blue-300 underline">[REGISTER NEW USER]</a>
+            </div>
+
+            <div class="flex justify-center space-x-4 mt-4">
+                <a href="#" class="social-icon w-10 h-10 bg-black border-2 border-blue-500 rounded-none flex items-center justify-center text-blue-400 hover:text-blue-300">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="social-icon w-10 h-10 bg-black border-2 border-blue-500 rounded-none flex items-center justify-center text-blue-400 hover:text-blue-300">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" class="social-icon w-10 h-10 bg-black border-2 border-blue-500 rounded-none flex items-center justify-center text-blue-400 hover:text-blue-300">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                <a href="#" class="social-icon w-10 h-10 bg-black border-2 border-blue-500 rounded-none flex items-center justify-center text-blue-400 hover:text-blue-300">
+                    <i class="fab fa-github"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent the default form submission
+
+            // Show the loader
+            document.getElementById('loader').style.display = 'flex';
+
+            // Submit the form after 2.5 seconds
+            setTimeout(() => {
+                this.submit();
+            }, 2500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            box-shadow: 5px 0 15px 0 rgba(59, 130, 246, 0.3);
+            width: 16rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+        .card {
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+        .navbar {
+            box-shadow: 0 2px 10px 0 rgba(59, 130, 246, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .profile-dropdown {
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.5);
+        }
+        .notification-badge {
+            box-shadow: 0 0 5px 1px rgba(220, 38, 38, 0.5);
+        }
+        .flash-message {
+            box-shadow: 0 0 10px 3px rgba(220, 38, 38, 0.5);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        #dropdownMenu {
+            display: none;
+        }
+        #dropdownMenu.show {
+            display: block;
+        }
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+        #sidebar.collapsed .nav-text {
+            display: none;
+        }
+        #sidebar.collapsed .dashboard-title {
+            display: none;
+        }
+        #mainContent {
+            transition: margin-left 0.3s ease;
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+        }
+        #sidebar.collapsed ~ #mainContent {
+            margin-left: 5rem;
+            width: calc(100% - 5rem);
+        }
+        @media (max-width: 992px) {
+            #sidebar {
+                width: 5rem;
+            }
+            #sidebar .nav-text, #sidebar .dashboard-title {
+                display: none;
+            }
+            #mainContent {
+                margin-left: 5rem;
+                width: calc(100% - 5rem);
+            }
+            #sidebar.collapsed {
+                width: 0;
+            }
+            #sidebar.collapsed ~ #mainContent {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+        .file-count {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .stat-card {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-black via-blue-900 to-gray-900 min-h-screen text-white font-mono">
+    <!-- Flash Message -->
+    <div id="flash-message" class="flash-message fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 border-2 border-red-500 rounded-none p-3 max-w-md w-full z-50" style="display: {% if get_flashed_messages() %}block{% else %}none{% endif %};">
+        <button class="absolute top-1 right-2 text-red-400 hover:text-red-300" onclick="document.getElementById('flash-message').style.display='none'">&times;</button>
+        <div class="text-center">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="text-red-400 font-mono text-sm">[SYSTEM ALERT] {{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-900 border-r-2 border-blue-500 p-4 sidebar">
+            <div class="flex items-center justify-between mb-8">
+                <button class="text-blue-400 hover:text-blue-300 text-xl dash-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-blue-400 text-xl font-bold dashboard-title">[SYSTEM]</h2>
+            </div>
+            <nav class="space-y-2">
+                <a href="/user_dashboard" class="flex items-center p-3 text-blue-300 nav-link active">
+                    <i class="fas fa-home w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[DASHBOARD]</span>
+                </a>
+                <a href="/profile" class="flex items-center p-3 text-blue-400 nav-link">
+                    <i class="fas fa-user w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[PROFILE]</span>
+                </a>
+                <a href="/analysis" class="flex items-center p-3 text-blue-400 nav-link">
+                    <i class="fas fa-chart-line w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[ANALYSIS]</span>
+                </a>
+                <a href="/settings" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-cog w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[SETTINGS]</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[LOGOUT]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="mainContent" class="flex-1">
+            <!-- Navbar -->
+            <header class="flex items-center justify-between p-4 bg-black border-b-2 border-blue-500 navbar">
+                <h1 class="text-xl font-bold text-blue-300">[USER DASHBOARD]</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="relative" id="notification-btn">
+                        <button class="text-blue-400 hover:text-blue-300 text-xl">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <button onclick="toggleDropdown()" class="flex items-center space-x-2 focus:outline-none">
+                            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white border-2 border-blue-400">
+                                {{ teacher_name[:2].upper() }}
+                            </div>
+                            <span class="text-blue-300 text-sm">{{ teacher_name }}</span>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-gray-900 border-2 border-blue-500 rounded-none profile-dropdown z-50">
+                            <div class="p-4">
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white border-2 border-blue-400">
+                                        {{ teacher_name[:2].upper() }}
+                                    </div>
+                                    <div>
+                                        <p class="text-blue-400 font-semibold">{{ teacher_name }}</p>
+                                        <p class="text-blue-300 text-xs">SYSTEM USER</p>
+                                    </div>
+                                </div>
+                                <div class="border-t-2 border-blue-500 pt-3">
+                                    <a href="{{ url_for('profile') }}" class="block text-blue-300 hover:text-blue-400 py-1">[PROFILE]</a>
+                                    <a href="/settings" class="block text-blue-300 hover:text-blue-400 py-1">[SETTINGS]</a>
+                                    <a href="{{ url_for('logout') }}" class="block text-blue-300 hover:text-blue-400 py-1">[LOGOUT]</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="p-6">
+                <!-- Welcome Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-blue-400 mb-2">[WELCOME, {{ teacher_name.split(' ')[0] | upper }}]</h2>
+                    <p class="text-blue-200">Last login: {{ last_login if last_login else 'First login' }}</p>
+                </div>
+
+               <!-- Dashboard Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Files Analyzed Card -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-6 rounded-none card stat-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-blue-400 font-bold mb-2">[FILES ANALYZED]</h3>
+                                <p class="text-blue-100">Total files processed</p>
+                            </div>
+                            <i class="fas fa-file-alt text-blue-400 text-3xl"></i>
+                        </div>
+                        <div class="mt-4">
+                            <p class="file-count">{{ analysis_stats.files_analyzed }}</p>
+                            <div class="mt-2 text-blue-300 text-sm">
+                                <i class="fas fa-arrow-up mr-1 text-green-400"></i>
+                                <span>+{{ analysis_stats.files_analyzed_weekly }} this week</span>
+                                <span class="mx-2">|</span>
+                                <span>+{{ analysis_stats.files_analyzed_monthly }} this month</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Downloads Card -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-6 rounded-none card stat-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-blue-400 font-bold mb-2">[REPORTS DOWNLOADED]</h3>
+                                <p class="text-blue-100">Total reports generated</p>
+                            </div>
+                            <i class="fas fa-download text-blue-400 text-3xl"></i>
+                        </div>
+                        <div class="mt-4">
+                            <p class="file-count">{{ analysis_stats.downloads_total }}</p>
+                            <div class="mt-2 text-blue-300 text-sm">
+                                <i class="fas fa-arrow-up mr-1 text-green-400"></i>
+                                <span>+{{ analysis_stats.downloads_weekly }} this week</span>
+                                <span class="mx-2">|</span>
+                                <span>+{{ analysis_stats.downloads_monthly }} this month</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Analyzed Card -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-6 rounded-none card stat-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-blue-400 font-bold mb-2">[STUDENTS ANALYZED]</h3>
+                                <p class="text-blue-100">Total students processed</p>
+                            </div>
+                            <i class="fas fa-users text-blue-400 text-3xl"></i>
+                        </div>
+                        <div class="mt-4">
+                            <p class="file-count">{{ analysis_stats.students_analyzed }}</p>
+                            <div class="mt-2 text-blue-300 text-sm">
+                                <i class="fas fa-arrow-up mr-1 text-green-400"></i>
+                                <span>+{{ analysis_stats.students_analyzed_weekly }} this week</span>
+                                <span class="mx-2">|</span>
+                                <span>+{{ analysis_stats.students_analyzed_monthly }} this month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Performance Distribution Chart -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                        <h3 class="text-blue-400 font-bold mb-4">[PERFORMANCE DISTRIBUTION]</h3>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Weak Subjects Chart -->
+                    <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                        <h3 class="text-blue-400 font-bold mb-4">[WEAK SUBJECTS ANALYSIS]</h3>
+                        <div class="chart-container">
+                            <canvas id="weakSubjectsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Section -->
+                <div class="bg-gray-900 border-2 border-blue-500 p-4 rounded-none card">
+                    <h3 class="text-blue-400 font-bold mb-4">[RECENT ACTIVITY]</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-blue-500">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-blue-300">Details</th>
+                                    <th class="px-4 py-2 text-left text-blue-300">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-blue-800">
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td class="px-4 py-2 text-blue-200">{{ activity.details }}</td>
+                                    <td class="px-4 py-2">
+                                        <span class="px-2 py-1 rounded-full text-xs
+                                            {% if activity.status == 'Completed' %}bg-green-900 text-green-300
+                                            {% elif activity.status == 'Failed' %}bg-red-900 text-red-300
+                                            {% else %}bg-blue-900 text-blue-300{% endif %}">
+                                            {{ activity.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleBtn = document.querySelector('.dash-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // Toggle dropdown
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdownMenu');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('button') && !event.target.closest('.relative')) {
+                const dropdowns = document.getElementsByClassName('profile-dropdown');
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        // Notification button
+        document.getElementById('notification-btn').addEventListener('click', () => {
+            alert('[SYSTEM NOTIFICATION]: You have 3 pending alerts!');
+        });
+
+        // Flash message timeout
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessage = document.getElementById('flash-message');
+            if (flashMessage) {
+                setTimeout(() => {
+                    flashMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            // Responsive handling
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            }
+
+            // Initialize charts
+            initCharts();
+        });
+
+        // Responsive handling
+        window.addEventListener('resize', function() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        });
+
+        // Initialize charts
+        function initCharts() {
+            // Performance Distribution Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            const performanceChart = new Chart(performanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-20', '21-40', '41-60', '61-80', '81-100'],
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: {{ performance_distribution | tojson }},
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(59, 130, 246, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(200, 200, 255, 0.7)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(59, 130, 246, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(200, 200, 255, 0.7)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(200, 200, 255, 0.7)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Weak Subjects Chart
+            const weakSubjectsCtx = document.getElementById('weakSubjectsChart').getContext('2d');
+            const weakSubjectsChart = new Chart(weakSubjectsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ weak_subjects_labels | tojson }},
+                    datasets: [{
+                        data: {{ weak_subjects_data | tojson }},
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: 'rgba(200, 200, 255, 0.7)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            box-shadow: 5px 0 15px 0 rgba(59, 130, 246, 0.3);
+            width: 16rem;
+            transition: all 0.3s ease;
+            position: fixed;
+            height: 100vh;
+            z-index: 20;
+        }
+        .admin-card {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.4);
+            width: 100%;
+        }
+        .search-input {
+            box-shadow: 0 0 5px 1px rgba(59, 130, 246, 0.2);
+        }
+        .search-input:focus {
+            box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.4);
+        }
+        .search-btn {
+            box-shadow: 0 0 5px 1px rgba(59, 130, 246, 0.2);
+        }
+        .search-btn:hover {
+            box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.4);
+        }
+        .edit-btn {
+            box-shadow: 0 0 5px 1px rgba(234, 179, 8, 0.3);
+        }
+        .edit-btn:hover {
+            box-shadow: 0 0 8px 2px rgba(234, 179, 8, 0.5);
+        }
+        .delete-btn {
+            box-shadow: 0 0 5px 1px rgba(220, 38, 38, 0.3);
+        }
+        .delete-btn:hover {
+            box-shadow: 0 0 8px 2px rgba(220, 38, 38, 0.5);
+        }
+        .sort-btn {
+            transition: all 0.2s ease;
+        }
+        .sort-btn:hover {
+            color: rgb(59, 130, 246);
+        }
+        .sort-btn.active {
+            color: rgb(59, 130, 246);
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+        #sidebar.collapsed .nav-text {
+            display: none;
+        }
+        #sidebar.collapsed .sidebar-title {
+            display: none;
+        }
+        #mainContent {
+            transition: margin-left 0.3s ease;
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+        }
+        #sidebar.collapsed ~ #mainContent {
+            margin-left: 5rem;
+            width: calc(100% - 5rem);
+        }
+        .table-row:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .navbar {
+            transition: all 0.3s ease;
+            width: 100%;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        @media (max-width: 992px) {
+            #sidebar {
+                width: 5rem;
+            }
+            #sidebar .nav-text, #sidebar .sidebar-title {
+                display: none;
+            }
+            #mainContent {
+                margin-left: 5rem;
+                width: calc(100% - 5rem);
+            }
+            #sidebar.collapsed {
+                width: 0;
+            }
+            #sidebar.collapsed ~ #mainContent {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-black via-blue-900 to-gray-900 min-h-screen text-white font-mono">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-900 border-r-2 border-blue-500 p-4 sidebar">
+            <div class="flex items-center justify-between mb-8">
+                <button class="text-blue-400 hover:text-blue-300 text-xl dash-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-blue-400 text-xl font-bold sidebar-title">[SYSTEM ADMIN]</h2>
+            </div>
+            <nav class="space-y-2">
+                <a href="/admin/dashboard" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-tachometer-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[DASHBOARD]</span>
+                </a>
+                <a href="/admin/users" class="flex items-center p-3 text-blue-400 nav-link active">
+                    <i class="fas fa-users w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[USERS]</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[LOGOUT]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="mainContent" class="flex-1">
+            <!-- Navbar -->
+            <header class="flex items-center justify-between p-4 bg-black border-b-2 border-blue-500 navbar">
+                <h1 class="text-xl font-bold text-blue-300">[USER MANAGEMENT SYSTEM]</h1>
+            </header>
+
+            <!-- Admin Content -->
+            <main class="p-6">
+                <div class="bg-gray-900 border-2 border-blue-500 rounded-none admin-card p-6 mb-6">
+                    <!-- Search Bar -->
+                    <form method="GET" action="{{ url_for('admin_users') }}" class="flex mb-6">
+                        <input type="text" name="search" placeholder="[SEARCH USERS...]"
+                               value="{{ request.args.get('search', '') }}"
+                               class="flex-1 px-4 py-2 bg-black text-blue-200 border-2 border-blue-500 rounded-none search-input focus:outline-none">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white border-2 border-blue-500 rounded-none search-btn hover:bg-blue-700 transition-all duration-200">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+
+                    <!-- Users Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="border-b-2 border-blue-500">
+                                    <th class="px-4 py-3 text-left text-blue-400">
+                                        [FIRST NAME]
+                                        <div class="inline-flex ml-2 space-x-1">
+                                            <a href="{{ url_for('admin_users', sort='first_name', order='asc', search=request.args.get('search', '')) }}"
+                                               class="sort-btn {% if request.args.get('sort') == 'first_name' and request.args.get('order') == 'asc' %}active{% endif %}">
+                                                <i class="fas fa-sort-up"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_users', sort='first_name', order='desc', search=request.args.get('search', '')) }}"
+                                               class="sort-btn {% if request.args.get('sort') == 'first_name' and request.args.get('order') == 'desc' %}active{% endif %}">
+                                                <i class="fas fa-sort-down"></i>
+                                            </a>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-blue-400">
+                                        [LAST NAME]
+                                        <div class="inline-flex ml-2 space-x-1">
+                                            <a href="{{ url_for('admin_users', sort='last_name', order='asc', search=request.args.get('search', '')) }}"
+                                               class="sort-btn {% if request.args.get('sort') == 'last_name' and request.args.get('order') == 'asc' %}active{% endif %}">
+                                                <i class="fas fa-sort-up"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_users', sort='last_name', order='desc', search=request.args.get('search', '')) }}"
+                                               class="sort-btn {% if request.args.get('sort') == 'last_name' and request.args.get('order') == 'desc' %}active{% endif %}">
+                                                <i class="fas fa-sort-down"></i>
+                                            </a>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-blue-400">[EMAIL]</th>
+                                    <th class="px-4 py-3 text-left text-blue-400">[PHONE]</th>
+                                    <th class="px-4 py-3 text-left text-blue-400">[GENDER]</th>
+                                    <th class="px-4 py-3 text-left text-blue-400">[COUNTRY]</th>
+                                    <th class="px-4 py-3 text-left text-blue-400">[ACTIONS]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                {% set phone = user.phone_numbers.first() %}
+                                <tr class="border-b border-blue-500 table-row">
+                                    <td class="px-4 py-3 text-blue-300">{{ user.first_name }}</td>
+                                    <td class="px-4 py-3 text-blue-300">{{ user.last_name }}</td>
+                                    <td class="px-4 py-3 text-blue-300">{{ user.email }}</td>
+                                    <td class="px-4 py-3 text-blue-300">{{ phone.phone if phone else 'N/A' }}</td>
+                                    <td class="px-4 py-3 text-blue-300">{{ user.gender.name if user.gender else 'N/A' }}</td>
+                                    <td class="px-4 py-3 text-blue-300">{{ phone.country_code if phone else 'N/A' }}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex space-x-2">
+                                            <a href="{{ url_for('edit_user', user_id=user.id) }}"
+                                               class="edit-btn px-3 py-1 bg-yellow-600 text-white rounded-none hover:bg-yellow-700 transition-all duration-200 border-2 border-yellow-500">
+                                                <i class="fas fa-edit mr-1"></i>[EDIT]
+                                            </a>
+                                            <a href="{{ url_for('delete_user', user_id=user.id) }}"
+                                               class="delete-btn px-3 py-1 bg-red-600 text-white rounded-none hover:bg-red-700 transition-all duration-200 border-2 border-red-500">
+                                                <i class="fas fa-trash-alt mr-1"></i>[DELETE]
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleBtn = document.querySelector('.dash-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // Responsive handling
+        function handleResponsive() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', handleResponsive);
+        window.addEventListener('resize', handleResponsive);
+    </script>
+</body>
+</html>

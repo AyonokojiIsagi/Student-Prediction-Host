@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            box-shadow: 5px 0 15px 0 rgba(59, 130, 246, 0.3);
+            width: 16rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+        .profile-card {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.4);
+            width: 100%;
+            max-width: 56rem;
+        }
+        .edit-btn {
+            box-shadow: 0 0 8px 2px rgba(74, 222, 128, 0.4);
+            transition: all 0.3s ease;
+        }
+        .edit-btn:hover {
+            box-shadow: 0 0 12px 4px rgba(74, 222, 128, 0.6);
+            transform: translateY(-1px);
+        }
+        .notification-badge {
+            box-shadow: 0 0 5px 1px rgba(220, 38, 38, 0.5);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+        #sidebar.collapsed .nav-text {
+            display: none;
+        }
+        #sidebar.collapsed .sidebar-title {
+            display: none;
+        }
+        #mainContent {
+            transition: margin-left 0.3s ease;
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+        }
+        #sidebar.collapsed ~ #mainContent {
+            margin-left: 5rem;
+            width: calc(100% - 5rem);
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 10px 0 rgba(59, 130, 246, 0.2);
+        }
+        @media (max-width: 992px) {
+            #sidebar {
+                width: 5rem;
+            }
+            #sidebar .nav-text, #sidebar .sidebar-title {
+                display: none;
+            }
+            #mainContent {
+                margin-left: 5rem;
+                width: calc(100% - 5rem);
+            }
+            #sidebar.collapsed {
+                width: 0;
+            }
+            #sidebar.collapsed ~ #mainContent {
+                margin-left: 0;
+                width: 100%;
+            }
+            .profile-card {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-black via-blue-900 to-gray-900 min-h-screen text-white font-mono">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-900 border-r-2 border-blue-500 p-4 sidebar">
+            <div class="flex items-center justify-between mb-8">
+                <button class="text-blue-400 hover:text-blue-300 text-xl dash-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-blue-400 text-xl font-bold sidebar-title">[SYSTEM]</h2>
+            </div>
+            <nav class="space-y-2">
+                <a href="/user_dashboard" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-home w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[DASHBOARD]</span>
+                </a>
+                <a href="/analysis" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-chart-bar w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[ANALYSIS]</span>
+                </a>
+                <a href="/profile" class="flex items-center p-3 text-blue-400 nav-link active">
+                    <i class="fas fa-user w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[PROFILE]</span>
+                </a>
+                <a href="/settings" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-cog w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[SETTINGS]</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[LOGOUT]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="mainContent" class="flex-1">
+            <!-- Navbar -->
+            <header class="flex items-center justify-between p-4 bg-black border-b-2 border-blue-500 navbar">
+                <h1 class="text-xl font-bold text-blue-300">[USER PROFILE]</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="relative" id="notification-btn">
+                        <button class="text-blue-400 hover:text-blue-300 text-xl">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                        </button>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white border-2 border-blue-400">
+                        {{ user.first_name[:1].upper() }}{{ user.last_name[:1].upper() }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Profile Card -->
+            <main class="p-6">
+                <div class="bg-gray-900 border-2 border-blue-500 rounded-none profile-card p-6 mx-auto">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-blue-400 mb-4 md:mb-0">
+                            {{ user.first_name }} {{ user.last_name }}
+                        </h2>
+                        <a href="{{ url_for('edit_profile') }}" class="edit-btn px-4 py-2 bg-green-600 text-white font-semibold rounded-none hover:bg-green-700 transition-all duration-200 border-2 border-green-500">
+                            <i class="fas fa-edit mr-2"></i>[EDIT PROFILE]
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border-2 border-blue-500 p-4">
+                            <h3 class="text-blue-400 font-bold mb-2">[IDENTIFICATION]</h3>
+                            <p class="text-blue-300"><span class="text-blue-400">Email:</span> {{ user.email }}</p>
+                        </div>
+                        <div class="border-2 border-blue-500 p-4">
+                            <h3 class="text-blue-400 font-bold mb-2">[CONTACT]</h3>
+                            <p class="text-blue-300"><span class="text-blue-400">Phone:</span> {{ phone.country_code if phone else 'N/A' }} {{ phone.phone if phone else 'Not provided' }}</p>
+                        </div>
+                        <div class="border-2 border-blue-500 p-4">
+                            <h3 class="text-blue-400 font-bold mb-2">[DEMOGRAPHICS]</h3>
+                            <p class="text-blue-300"><span class="text-blue-400">Gender:</span> {{ user.gender.name if user.gender else 'Not provided' }}</p>
+                        </div>
+                        <div class="border-2 border-blue-500 p-4">
+                            <h3 class="text-blue-400 font-bold mb-2">[SYSTEM DATA]</h3>
+                            <p class="text-blue-300"><span class="text-blue-400">User ID:</span> {{ user.id }}</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleBtn = document.querySelector('.dash-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // Notification button
+        document.getElementById('notification-btn').addEventListener('click', () => {
+            alert('[SYSTEM NOTIFICATION]: You have 3 pending alerts!');
+        });
+
+        // Responsive handling
+        function handleResponsive() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', handleResponsive);
+        window.addEventListener('resize', handleResponsive);
+    </script>
+</body>
+</html>

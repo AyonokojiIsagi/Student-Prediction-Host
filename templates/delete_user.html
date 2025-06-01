@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete User </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            box-shadow: 5px 0 15px 0 rgba(59, 130, 246, 0.3);
+        }
+        .delete-card {
+            box-shadow: 0 0 15px 5px rgba(220, 38, 38, 0.4);
+        }
+        .delete-btn {
+            box-shadow: 0 0 8px 2px rgba(220, 38, 38, 0.4);
+        }
+        .delete-btn:hover {
+            box-shadow: 0 0 12px 4px rgba(220, 38, 38, 0.6);
+        }
+        .cancel-btn {
+            box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.4);
+        }
+        .cancel-btn:hover {
+            box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.6);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+        #sidebar.collapsed .nav-text {
+            display: none;
+        }
+        #mainContent.expanded {
+            margin-left: 5rem;
+        }
+        .warning-icon {
+            text-shadow: 0 0 10px rgba(220, 38, 38, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-black via-blue-900 to-gray-900 min-h-screen text-white font-mono">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-900 border-r-2 border-blue-500 p-4 sidebar transition-all duration-300">
+            <div class="flex items-center justify-between mb-8">
+                <button class="text-blue-400 hover:text-blue-300 text-xl dash-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-blue-400 text-xl font-bold">[SYSTEM ADMIN]</h2>
+            </div>
+            <nav class="space-y-2">
+                <a href="/admin/dashboard" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-tachometer-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[DASHBOARD]</span>
+                </a>
+                <a href="/admin/users" class="flex items-center p-3 text-blue-400 nav-link active">
+                    <i class="fas fa-users w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[USERS]</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[LOGOUT]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="mainContent" class="flex-1 transition-all duration-300">
+            <!-- Navbar -->
+            <header class="flex items-center justify-between p-4 bg-black border-b-2 border-blue-500">
+                <h1 class="text-xl font-bold text-blue-300">[USER TERMINATION]</h1>
+
+            </header>
+
+            <!-- Delete Confirmation -->
+            <main class="p-6">
+                <div class="bg-gray-900 border-2 border-red-500 rounded-none delete-card p-8 max-w-2xl mx-auto text-center">
+                    <div class="warning-icon text-red-500 text-5xl mb-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-red-400 mb-2">[CONFIRM TERMINATION]</h3>
+                    <p class="text-blue-300 mb-4">
+                        Execute permanent deletion of user <span class="text-red-400 font-bold">{{ user.first_name }} {{ user.last_name }}</span>?
+                    </p>
+                    <p class="text-red-500 font-bold mb-6">[WARNING: THIS ACTION IS IRREVERSIBLE]</p>
+
+                    <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" class="flex justify-center space-x-6">
+                        <a href="{{ url_for('admin_users') }}" class="cancel-btn px-6 py-2 bg-blue-600 text-white font-bold rounded-none hover:bg-blue-700 transition-all duration-200 border-2 border-blue-500">
+                            <i class="fas fa-times mr-2"></i>[ABORT]
+                        </a>
+                        <button type="submit" class="delete-btn px-6 py-2 bg-red-600 text-white font-bold rounded-none hover:bg-red-700 transition-all duration-200 border-2 border-red-500">
+                            <i class="fas fa-trash-alt mr-2"></i>[CONFIRM TERMINATION]
+                        </button>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleBtn = document.querySelector('.dash-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        });
+
+        // Responsive handling
+        function handleResponsive() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            } else {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', handleResponsive);
+        window.addEventListener('resize', handleResponsive);
+    </script>
+</body>
+</html>

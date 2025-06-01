@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            box-shadow: 5px 0 15px 0 rgba(59, 130, 246, 0.3);
+            width: 16rem;
+            transition: all 0.3s ease;
+            position: fixed;
+            height: 100vh;
+            z-index: 20;
+        }
+        .admin-card {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.4);
+            width: 100%;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.3);
+        }
+        .card-hover:hover {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.6);
+            transform: translateY(-3px);
+        }
+        .navbar {
+            box-shadow: 0 2px 10px 0 rgba(59, 130, 246, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        .nav-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-left: 2px solid rgb(59, 130, 246);
+        }
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+        #sidebar.collapsed .nav-text {
+            display: none;
+        }
+        #sidebar.collapsed .sidebar-title {
+            display: none;
+        }
+        #mainContent {
+            transition: margin-left 0.3s ease;
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+        }
+        #sidebar.collapsed ~ #mainContent {
+            margin-left: 5rem;
+            width: calc(100% - 5rem);
+        }
+        @media (max-width: 992px) {
+            #sidebar {
+                width: 5rem;
+            }
+            #sidebar .nav-text, #sidebar .sidebar-title {
+                display: none;
+            }
+            #mainContent {
+                margin-left: 5rem;
+                width: calc(100% - 5rem);
+            }
+            #sidebar.collapsed {
+                width: 0;
+            }
+            #sidebar.collapsed ~ #mainContent {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-black via-blue-900 to-gray-900 min-h-screen text-white font-mono">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-900 border-r-2 border-blue-500 p-4 sidebar">
+            <div class="flex items-center justify-between mb-8">
+                <button class="text-blue-400 hover:text-blue-300 text-xl dash-toggle-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-blue-400 text-xl font-bold sidebar-title">[SYSTEM ADMIN]</h2>
+            </div>
+            <nav class="space-y-2">
+                <a href="/admin/dashboard" class="flex items-center p-3 text-blue-400 nav-link active">
+                    <i class="fas fa-tachometer-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[DASHBOARD]</span>
+                </a>
+                <a href="/admin/users" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-users w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[USERS]</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center p-3 text-blue-300 nav-link">
+                    <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                    <span class="ml-3 nav-text">[LOGOUT]</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="mainContent" class="flex-1">
+            <!-- Navbar -->
+            <header class="flex items-center justify-between p-4 bg-black border-b-2 border-blue-500 navbar">
+                <h1 class="text-xl font-bold text-blue-300">[SYSTEM CONTROL: ADMINISTRATOR]</h1>
+                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white border-2 border-blue-400">
+                    {{ teacher_name[:1].upper() }}
+                </div>
+            </header>
+
+            <!-- Admin Content -->
+            <main class="p-6">
+                <div class="bg-gray-900 border-2 border-blue-500 rounded-none admin-card p-6 mb-6">
+                    <h2 class="text-xl font-bold text-blue-400 mb-2">[SYSTEM OVERVIEW]</h2>
+                    <p class="text-blue-300">Administrative control panel for system management</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <a href="/admin/users" class="bg-gray-900 border-2 border-blue-500 rounded-none p-6 card-hover">
+                        <div class="text-blue-400 text-3xl mb-3">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="text-blue-400 font-bold mb-1">[USER DATABASE]</h3>
+                        <div class="text-2xl font-bold text-blue-300">{{ user_count }}</div>
+                        <p class="text-blue-400 text-sm mt-2">Registered system users</p>
+                    </a>
+
+                    <!-- Additional admin cards can be added here -->
+                    <div class="bg-gray-900 border-2 border-blue-500 rounded-none p-6 card-hover">
+                        <div class="text-blue-400 text-3xl mb-3">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <h3 class="text-blue-400 font-bold mb-1">[SYSTEM STATUS]</h3>
+                        <div class="text-2xl font-bold text-green-400">ONLINE</div>
+                        <p class="text-blue-400 text-sm mt-2">All systems operational</p>
+                    </div>
+
+                    <div class="bg-gray-900 border-2 border-blue-500 rounded-none p-6 card-hover">
+                        <div class="text-blue-400 text-3xl mb-3">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="text-blue-400 font-bold mb-1">[SECURITY]</h3>
+                        <div class="text-2xl font-bold text-blue-300">LEVEL 5</div>
+                        <p class="text-blue-400 text-sm mt-2">Maximum security enabled</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar
+        const toggleBtn = document.querySelector('.dash-toggle-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // Responsive handling
+        function handleResponsive() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', handleResponsive);
+        window.addEventListener('resize', handleResponsive);
+    </script>
+</body>
+</html>

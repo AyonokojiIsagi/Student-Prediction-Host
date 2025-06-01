@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Gateway | Student Prediction System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gateway-card {
+            box-shadow: 0 0 20px 8px rgba(59, 130, 246, 0.4);
+        }
+        .login-btn {
+            box-shadow: 0 0 10px 2px rgba(59, 130, 246, 0.5);
+        }
+        .login-btn:hover {
+            box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.7);
+        }
+        .register-btn {
+            box-shadow: 0 0 10px 2px rgba(74, 222, 128, 0.5);
+        }
+        .register-btn:hover {
+            box-shadow: 0 0 15px 5px rgba(74, 222, 128, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-black via-blue-900 to-gray-900 min-h-screen flex items-center justify-center font-mono">
+    <div class="bg-gray-900 border-2 border-blue-500 p-8 rounded-none gateway-card w-full max-w-md text-center">
+        <h1 class="text-2xl font-bold text-blue-400 mb-4">[SYSTEM GATEWAY]</h1>
+        <p class="text-blue-300 mb-6">Initializing access protocol. Select authentication method to proceed.</p>
+
+        <div class="flex justify-center space-x-6">
+            <a href="{{ url_for('login') }}"
+               class="login-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-none border-2 border-blue-500 transition-all duration-200">
+                [LOGIN]
+            </a>
+            <a href="{{ url_for('register') }}"
+               class="register-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-none border-2 border-green-500 transition-all duration-200">
+                [REGISTER]
+            </a>
+        </div>
+
+        <div class="mt-8 pt-4 border-t-2 border-blue-500">
+            <p class="text-blue-400 text-sm">UNKNOWN USER DETECTED</p>
+            <p class="text-blue-300 text-xs mt-1">SPS</p>
+        </div>
+    </div>
+</body>
+</html>
